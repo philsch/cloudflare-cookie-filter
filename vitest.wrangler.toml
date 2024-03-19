@@ -1,0 +1,12 @@
+#
+# This config file is used for integration testing, see vitest.config.ts
+#
+
+name = "cloudflare-cookie-filter"
+main = "src/index.ts"
+compatibility_date = "2024-03-14"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ORIGIN = "server.fake"
+COOKIE_PREFIX_FILTER = "prefix-"
