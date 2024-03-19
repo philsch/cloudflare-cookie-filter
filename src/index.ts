@@ -10,7 +10,7 @@ export interface Env {
 }
 
 export default {
-    async fetch(request: Request, env: Env): Promise<Response> | Response {
+    async fetch(request: Request, env: Env): Promise<Response> {
         /**
          * Filters out all Cookies that are not matching the given filter conditions.
          * Returns the already serialized Cookie header.
@@ -54,7 +54,7 @@ export default {
 
             const originUrl = `https://${env.ORIGIN}${requestUrl.pathname}${requestUrl.search}`;
 
-            return await fetch(
+            return fetch(
                 originUrl,
                 {
                     method,
