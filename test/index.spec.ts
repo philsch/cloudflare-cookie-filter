@@ -6,16 +6,18 @@ import worker from '../src/index';
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
 beforeAll(() => {
+    fetchMock.mockGlobal();
     fetchMock
         .get(`https://${env.ORIGIN}`, 200)
         .get(`https://${env.ORIGIN}/with/path?param1=a&param2=b`, 200)
         .post(`https://${env.ORIGIN}/set`, 204);
 });
 afterAll(() => {
-    fetchMock.reset();
+    fetchMock.unmockGlobal();
+    fetchMock.hardReset();
 });
 afterEach(() => {
-    fetchMock.resetHistory();
+    fetchMock.clearHistory();
 });
 
 describe('Cookie filter worker', () => {
@@ -32,7 +34,7 @@ describe('Cookie filter worker', () => {
         const expectedOriginUrl = `https://${env.ORIGIN}`;
         await callWorker(requestUrl, 'GET');
 
-        expect(fetchMock.called(expectedOriginUrl)).toBeTruthy();
+        expect(fetchMock.callHistory.called(expectedOriginUrl)).toBeTruthy();
     });
 
     it('forwards request path and parameters', async () => {
@@ -40,7 +42,7 @@ describe('Cookie filter worker', () => {
         const expectedOriginUrl = `https://${env.ORIGIN}/with/path?param1=a&param2=b`;
         await callWorker(requestUrl, 'GET');
 
-        expect(fetchMock.called(expectedOriginUrl)).toBeTruthy();
+        expect(fetchMock.callHistory.called(expectedOriginUrl)).toBeTruthy();
     });
 
     it('forwards headers', async () => {
@@ -52,10 +54,10 @@ describe('Cookie filter worker', () => {
         const expectedOriginUrl = `https://${env.ORIGIN}`;
         await callWorker(requestUrl, 'GET', requestHeaders);
 
-        expect(fetchMock.called(expectedOriginUrl)).toBeTruthy();
-        const forwardedHeaders = fetchMock.lastCall(expectedOriginUrl)[1]?.headers;
-        expect(forwardedHeaders['Accept']).toBe('*/*');
-        expect(forwardedHeaders['Content-Type']).toBe('application/json');
+        expect(fetchMock.callHistory.called(expectedOriginUrl)).toBeTruthy();
+        const forwardedHeaders = fetchMock.callHistory.lastCall(expectedOriginUrl)?.options?.headers;
+        expect(forwardedHeaders['accept']).toBe('*/*');
+        expect(forwardedHeaders['content-type']).toBe('application/json');
     });
 
     it('forwards Host has X-Forwarded-Host', async () => {
@@ -66,9 +68,9 @@ describe('Cookie filter worker', () => {
         const expectedOriginUrl = `https://${env.ORIGIN}`;
         await callWorker(requestUrl, 'GET', requestHeaders);
 
-        expect(fetchMock.called(expectedOriginUrl)).toBeTruthy();
-        const forwardedHeaders = fetchMock.lastCall(expectedOriginUrl)[1]?.headers;
-        expect(forwardedHeaders['X-Forwarded-Host']).toBe('example.com');
+        expect(fetchMock.callHistory.called(expectedOriginUrl)).toBeTruthy();
+        const forwardedHeaders = fetchMock.callHistory.lastCall(expectedOriginUrl)?.options?.headers;
+        expect(forwardedHeaders['x-forwarded-host']).toBe('example.com');
     });
 
     it('forwards a POST request with body', async () => {
@@ -81,12 +83,12 @@ describe('Cookie filter worker', () => {
         const expectedOriginUrl = `https://${env.ORIGIN}/set`;
         await callWorker(requestUrl, 'POST', requestHeaders, requestBody);
 
-        const forwardedBody = fetchMock.lastOptions().body;
+        const forwardedBody = fetchMock.callHistory.lastCall()?.options?.body;
         const {done, value} = await forwardedBody.getReader().read();
         const decoder = new TextDecoder();
         const decodedForwardedBody = decoder.decode(value);
 
-        expect(fetchMock.called(expectedOriginUrl)).toBeTruthy();
+        expect(fetchMock.callHistory.called(expectedOriginUrl)).toBeTruthy();
         expect(decodedForwardedBody).toBe('{"hello":"world"}');
     });
 
@@ -102,9 +104,9 @@ describe('Cookie filter worker', () => {
         await worker.fetch(request, customEnv, ctx);
         await waitOnExecutionContext(ctx);
 
-        expect(fetchMock.called(expectedOriginUrl)).toBeTruthy();
-        const forwardedHeaders = fetchMock.lastCall(expectedOriginUrl)[1]?.headers;
-        expect(forwardedHeaders.Cookie).toBe('a=1; b=2; c=3');
+        expect(fetchMock.callHistory.called(expectedOriginUrl)).toBeTruthy();
+        const forwardedHeaders = fetchMock.callHistory.lastCall(expectedOriginUrl)?.options?.headers;
+        expect(forwardedHeaders.cookie).toBe('a=1; b=2; c=3');
     });
 
     it('does not forward cookies which names do not match the COOKIE_PREFIX_FILTER', async () => {
@@ -119,8 +121,8 @@ describe('Cookie filter worker', () => {
         await worker.fetch(request, customEnv, ctx);
         await waitOnExecutionContext(ctx);
 
-        expect(fetchMock.called(expectedOriginUrl)).toBeTruthy();
-        const forwardedHeaders = fetchMock.lastCall(expectedOriginUrl)[1]?.headers;
-        expect(forwardedHeaders.Cookie).toBe('prefix-d=4; prefix-f=6');
+        expect(fetchMock.callHistory.called(expectedOriginUrl)).toBeTruthy();
+        const forwardedHeaders = fetchMock.callHistory.lastCall(expectedOriginUrl)?.options?.headers;
+        expect(forwardedHeaders.cookie).toBe('prefix-d=4; prefix-f=6');
     });
 });
