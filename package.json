@@ -11,17 +11,20 @@
     "test": "vitest"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.14.0",
-    "@cloudflare/workers-types": "^4.20260411.0",
+    "@cloudflare/vitest-plugin": "^1.8.2",
+    "@cloudflare/workers-types": "^5.20261113.1",
     "@eslint/js": "^10.0.0",
     "eslint": "^10.0.0",
     "fetch-mock": "^12.0.0",
     "typescript": "^6.0.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^4.1.0",
-    "wrangler": "^4.0.0"
+    "wrangler": "^4.162.0"
   },
   "dependencies": {
     "cookie": "^1.0.0"
+  },
+  "overrides": {
+    "minimatch": "^11.0.1"
   }
 }
